@@ -13,10 +13,13 @@ struct ReadTabView: View {
 
     @Binding var selectedTab: Int
 
+    @AppStorage("wpm") private var wpm: Double = 400
+    @AppStorage("holdToPlay") private var holdToPlay: Bool = true
+
     @State private var words: [String] = []
     @State private var currentIndex: Int = 0
     @State private var isPressing: Bool = false
-    @State private var wpm: Double = 400
+    @State private var isPlaying: Bool = false
     @State private var advanceTask: Task<Void, Never>? = nil
 
     private var interval: TimeInterval { max(0.03, 60.0 / max(wpm, 1)) }
@@ -33,11 +36,11 @@ struct ReadTabView: View {
                     .gesture(
                         DragGesture(minimumDistance: 0)
                             .onChanged { _ in
-                                if !isPressing {
-                                    isPressing = true
-                                }
+                                guard holdToPlay else { return }
+                                if !isPressing { isPressing = true }
                             }
                             .onEnded { _ in
+                                guard holdToPlay else { return }
                                 isPressing = false
                             }
                     )
@@ -88,24 +91,26 @@ struct ReadTabView: View {
 
                     Spacer()
 
-                    VStack(spacing: 12) {
-                        HStack {
-                            Text("WPM: \(Int(wpm))")
-                            Slider(value: $wpm, in: 100...900, step: 10)
+                    HStack(spacing: 12) {
+                        Button("Reset") {
+                            currentIndex = 0
                         }
-                        HStack {
-                            Button("Reset") {
-                                currentIndex = 0
+                        .buttonStyle(.bordered)
+                        .disabled(words.isEmpty)
+
+                        if !holdToPlay {
+                            Button(isPlaying ? "Pause" : "Play") {
+                                isPlaying.toggle()
                             }
-                            .buttonStyle(.bordered)
+                            .buttonStyle(.borderedProminent)
                             .disabled(words.isEmpty)
-
-                            Spacer()
-
-                            Text("\(min(currentIndex + 1, max(words.count, 1)))/\(max(words.count, 1))")
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
                         }
+
+                        Spacer()
+
+                        Text("\(min(currentIndex + 1, max(words.count, 1)))/\(max(words.count, 1))")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                     }
                     .padding(.horizontal)
                 }
@@ -135,22 +140,20 @@ struct ReadTabView: View {
                 persistProgressIfNeeded()
             }
             .onChange(of: isPressing) { _, newValue in
+                guard holdToPlay else { return }
+                updateAdvanceTask()
+            }
+            .onChange(of: isPlaying) { _, _ in
+                guard !holdToPlay else { return }
+                updateAdvanceTask()
+            }
+            .onChange(of: holdToPlay) { _, newValue in
                 if newValue {
-                    if advanceTask == nil {
-                        advanceTask = Task { @MainActor in
-                            while !Task.isCancelled && isPressing {
-                                if currentIndex + 1 < words.count {
-                                    currentIndex += 1
-                                }
-                                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
-                            }
-                            advanceTask = nil
-                        }
-                    }
+                    isPlaying = false
                 } else {
-                    advanceTask?.cancel()
-                    advanceTask = nil
+                    isPressing = false
                 }
+                updateAdvanceTask()
             }
         }
     }
@@ -189,6 +192,26 @@ struct ReadTabView: View {
         book.currentWordIndex = min(currentIndex, max(words.count - 1, 0))
         book.progress = Double(book.currentWordIndex + 1) / Double(words.count)
         book.updatedAt = Date()
+    }
+
+    private func updateAdvanceTask() {
+        let shouldAdvance = holdToPlay ? isPressing : isPlaying
+        if shouldAdvance {
+            if advanceTask == nil {
+                advanceTask = Task { @MainActor in
+                    while !Task.isCancelled && (holdToPlay ? isPressing : isPlaying) {
+                        if currentIndex + 1 < words.count {
+                            currentIndex += 1
+                        }
+                        try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
+                    }
+                    advanceTask = nil
+                }
+            }
+        } else {
+            advanceTask?.cancel()
+            advanceTask = nil
+        }
     }
 
     private func orpIndex(for word: String) -> Int {
