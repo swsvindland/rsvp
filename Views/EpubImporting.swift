@@ -15,6 +15,17 @@ func storeEpub(from url: URL) throws -> (fileName: String, filePath: String, ext
         throw NSError(domain: "rsvp", code: 1, userInfo: [NSLocalizedDescriptionKey: "Could not access Documents folder."])
     }
 
+    let didStartAccessing = url.startAccessingSecurityScopedResource()
+    defer {
+        if didStartAccessing {
+            url.stopAccessingSecurityScopedResource()
+        }
+    }
+
+    if fileManager.isUbiquitousItem(at: url) {
+        try? fileManager.startDownloadingUbiquitousItem(at: url)
+    }
+
     let baseName = url.deletingPathExtension().lastPathComponent
     let fileExtension = url.pathExtension.isEmpty ? "epub" : url.pathExtension
     var destination = documents.appendingPathComponent("\(baseName).\(fileExtension)")
@@ -24,14 +35,35 @@ func storeEpub(from url: URL) throws -> (fileName: String, filePath: String, ext
         counter += 1
     }
 
-    if fileManager.fileExists(atPath: destination.path) {
-        try fileManager.removeItem(at: destination)
+    var storedResult: (fileName: String, filePath: String, extractedText: String)?
+    var storedError: Error?
+    var coordinationError: NSError?
+    let coordinator = NSFileCoordinator()
+    coordinator.coordinate(readingItemAt: url, options: [], error: &coordinationError) { readURL in
+        do {
+            if fileManager.fileExists(atPath: destination.path) {
+                try fileManager.removeItem(at: destination)
+            }
+
+            try fileManager.copyItem(at: readURL, to: destination)
+            let extractedText = try extractEpubText(from: destination)
+            storedResult = (destination.lastPathComponent, destination.path, extractedText)
+        } catch {
+            storedError = error
+        }
     }
 
-    try fileManager.copyItem(at: url, to: destination)
+    if let coordinationError {
+        throw coordinationError
+    }
+    if let storedError {
+        throw storedError
+    }
+    guard let storedResult else {
+        throw NSError(domain: "rsvp", code: 2, userInfo: [NSLocalizedDescriptionKey: "Failed to import the EPUB."])
+    }
 
-    let extractedText = try extractEpubText(from: destination)
-    return (destination.lastPathComponent, destination.path, extractedText)
+    return storedResult
 }
 
 func extractEpubText(from url: URL) throws -> String {
