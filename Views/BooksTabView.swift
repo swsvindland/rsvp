@@ -60,6 +60,13 @@ struct BooksTabView: View {
                                 Label("Set Active", systemImage: "checkmark.circle")
                             }
                             .tint(.blue)
+
+                            Button {
+                                resetProgress(for: book)
+                            } label: {
+                                Label("Reset Progress", systemImage: "arrow.counterclockwise")
+                            }
+                            .tint(.orange)
                         }
                     }
                     .onDelete(perform: deleteBooks)
@@ -118,6 +125,14 @@ struct BooksTabView: View {
             for index in offsets {
                 modelContext.delete(books[index])
             }
+        }
+    }
+
+    private func resetProgress(for book: Book) {
+        withAnimation {
+            book.currentWordIndex = 0
+            book.progress = 0
+            book.updatedAt = Date()
         }
     }
 }

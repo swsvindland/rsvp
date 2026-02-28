@@ -11,8 +11,6 @@ import SwiftData
 struct ReadTabView: View {
     @Query(sort: \Book.createdAt) private var books: [Book]
 
-    @Binding var selectedTab: Int
-
     @AppStorage("wpm") private var wpm: Double = 400
     @AppStorage("holdToPlay") private var holdToPlay: Bool = true
 
@@ -91,39 +89,32 @@ struct ReadTabView: View {
 
                     Spacer()
 
-                    HStack(spacing: 12) {
-                        Button("Reset") {
-                            currentIndex = 0
-                        }
-                        .buttonStyle(.bordered)
-                        .disabled(words.isEmpty)
-
+                    VStack(spacing: 16) {
                         if !holdToPlay {
-                            Button(isPlaying ? "Pause" : "Play") {
+                            Button {
                                 isPlaying.toggle()
+                            } label: {
+                                Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                                    .font(.system(size: 28, weight: .semibold))
+                                    .foregroundStyle(.white)
+                                    .frame(width: 72, height: 72)
+                                    .background(Circle().fill(.blue))
                             }
-                            .buttonStyle(.borderedProminent)
+                            .buttonStyle(.plain)
                             .disabled(words.isEmpty)
+                            .opacity(words.isEmpty ? 0.5 : 1)
                         }
-
-                        Spacer()
 
                         Text("\(min(currentIndex + 1, max(words.count, 1)))/\(max(words.count, 1))")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
+                    .frame(maxWidth: .infinity)
                     .padding(.horizontal)
                 }
                 .padding(.bottom)
             }
             .navigationTitle("Read")
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button("Books") {
-                        selectedTab = 1
-                    }
-                }
-            }
             .onAppear {
                 loadActiveBook()
             }

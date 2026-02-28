@@ -13,7 +13,7 @@ struct ContentView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            ReadTabView(selectedTab: $selectedTab)
+            ReadTabView()
                 .tabItem {
                     Label("Read", systemImage: "book")
                 }
