@@ -11,11 +11,14 @@ import UniformTypeIdentifiers
 
 struct BookEditorView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     @Bindable var book: Book
 
     @State private var isImportingEpub: Bool = false
     @State private var importErrorMessage: String = ""
     @State private var isShowingImportError: Bool = false
+    @State private var isShowingRestartConfirmation: Bool = false
+    @State private var isShowingDeleteConfirmation: Bool = false
 
     let onSetActive: () -> Void
 
@@ -31,6 +34,12 @@ struct BookEditorView: View {
                 Button("Set as Active") {
                     onSetActive()
                     dismiss()
+                }
+                Button("Restart Book", role: .destructive) {
+                    isShowingRestartConfirmation = true
+                }
+                Button("Delete Book", role: .destructive) {
+                    isShowingDeleteConfirmation = true
                 }
             }
 
@@ -56,8 +65,29 @@ struct BookEditorView: View {
                     }
                 }
             }
+
         }
         .navigationTitle(book.title.isEmpty ? "Edit Book" : book.title)
+        .confirmationDialog(
+            "Restart this book from the beginning?",
+            isPresented: $isShowingRestartConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Restart Book", role: .destructive) {
+                restartBook()
+            }
+            Button("Cancel", role: .cancel) { }
+        }
+        .confirmationDialog(
+            "Delete this book? This cannot be undone.",
+            isPresented: $isShowingDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Book", role: .destructive) {
+                deleteBook()
+            }
+            Button("Cancel", role: .cancel) { }
+        }
         .fileImporter(
             isPresented: $isImportingEpub,
             allowedContentTypes: [UTType.epub]
@@ -84,6 +114,21 @@ struct BookEditorView: View {
             Button("OK") { }
         } message: {
             Text(importErrorMessage)
+        }
+    }
+
+    private func restartBook() {
+        withAnimation {
+            book.currentWordIndex = 0
+            book.progress = 0
+            book.updatedAt = Date()
+        }
+    }
+
+    private func deleteBook() {
+        withAnimation {
+            modelContext.delete(book)
+            dismiss()
         }
     }
 }
