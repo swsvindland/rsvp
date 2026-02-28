@@ -26,6 +26,7 @@ struct SettingsTabView: View {
                     }
 
                     Toggle("Hold to play", isOn: $holdToPlay)
+                        .tint(.accentColor)
                 }
             }
             .navigationTitle("Settings")

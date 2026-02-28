@@ -229,7 +229,7 @@ struct ReadTabView: View {
         if idx < stripped.count, let range = Range(NSRange(location: idx, length: 1), in: String(stripped)) {
             let start = AttributedString.Index(range.lowerBound, within: attr) ?? attr.startIndex
             let end = AttributedString.Index(range.upperBound, within: attr) ?? attr.endIndex
-            if start < end { attr[start..<end].foregroundColor = .red }
+            if start < end { attr[start..<end].foregroundColor = .accentColor }
         }
         if !trailingPunctuation.isEmpty {
             let punct = AttributedString(trailingPunctuation)
