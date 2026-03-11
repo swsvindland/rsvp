@@ -29,12 +29,12 @@ final class Book {
     var id: UUID = UUID()
     var title: String = ""
     var sourceType: BookSourceType = BookSourceType.text
-    @Attribute(.externalStorage) var text: String
+    @Attribute(.externalStorage) var text: String = ""
     var epubFileName: String?
     var epubFilePath: String?
-    var isActive: Bool
-    var currentWordIndex: Int
-    var progress: Double
+    var isActive: Bool = false
+    var currentWordIndex: Int = 0
+    var progress: Double = 0.0
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
 
