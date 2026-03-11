@@ -13,7 +13,6 @@ struct rsvpApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Book.self,
-            Item.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
