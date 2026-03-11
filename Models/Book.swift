@@ -26,20 +26,22 @@ enum BookSourceType: String, Codable, CaseIterable, Identifiable {
 
 @Model
 final class Book {
-    var title: String
-    var sourceType: BookSourceType
-    var text: String
+    var id: UUID = UUID()
+    var title: String = ""
+    var sourceType: BookSourceType = BookSourceType.text
+    @Attribute(.externalStorage) var text: String
     var epubFileName: String?
     var epubFilePath: String?
     var isActive: Bool
     var currentWordIndex: Int
     var progress: Double
-    var createdAt: Date
-    var updatedAt: Date
+    var createdAt: Date = Date()
+    var updatedAt: Date = Date()
 
     init(
-        title: String,
-        sourceType: BookSourceType,
+        id: UUID = UUID(),
+        title: String = "",
+        sourceType: BookSourceType = BookSourceType.text,
         text: String = "",
         epubFileName: String? = nil,
         epubFilePath: String? = nil,
@@ -49,6 +51,7 @@ final class Book {
         createdAt: Date = Date(),
         updatedAt: Date = Date()
     ) {
+        self.id = id
         self.title = title
         self.sourceType = sourceType
         self.text = text
